@@ -34,14 +34,19 @@ def can_travelers_cross(N, K, speeds):
 
 def solve():
     T = int(input())  # Number of test cases
+    results = []
     for t in range(1, T+1):
         N, K = map(int, input().split())
         speeds = [int(input()) for _ in range(N)]
         
         if can_travelers_cross(N, K, speeds):
-            print(f"Case #{t}: YES")
+            results.append(f"Case #{t}: YES")
         else:
-            print(f"Case #{t}: NO")
+            results.append(f"Case #{t}: NO")
+    
+    with open("output.txt", "w") as f:
+        for result in results:
+            f.write(result + "\n")
 
 # Example usage:
 solve()
