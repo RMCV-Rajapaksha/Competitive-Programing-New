@@ -17,7 +17,7 @@ def solve():
         valid_materials = set(str(i) for i in range(1, N + 1))
         
         dp = [0] * (len(number) + 1)
-        dp[0] = 1  # There is one way to split an empty string
+        dp[0] = 1  
         
         for i in range(1, len(number) + 1):
             for l in range(1, len(str(N)) + 1):
