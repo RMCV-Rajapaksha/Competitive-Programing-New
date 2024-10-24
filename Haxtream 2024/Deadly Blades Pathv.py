@@ -128,19 +128,16 @@ def Solution2():
 
 
 
-# Randomizer function
 def Randomizer():
     import random
     import time
 
-    # Set the seed for randomness based on the current time
     random.seed(time.time())
     
-    # Randomly choose to execute either solution 1 or solution 2
+  
     if random.choice([True, False]):
         Solution1()
     else:
         Solution2()
 
-# Call the randomizer
 Randomizer()
