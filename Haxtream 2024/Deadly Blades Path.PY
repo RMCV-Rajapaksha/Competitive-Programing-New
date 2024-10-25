@@ -105,7 +105,7 @@ def deadly_blades_path(num_blades, blades_data):
         blade_start = (initial_x, initial_y)
         blade_end = (final_x, final_y)
 
-        # Check if the blade intersects with the player's path
+      
         if calculate_intersection(0, 0, 25, 25, initial_x, initial_y, final_x, final_y, speed):
             collision_count += 1
 
@@ -115,28 +115,27 @@ def deadly_blades_path(num_blades, blades_data):
         print(f"No {collision_count}")
 
 def Solution2():
-# Input Handling
-    n = int(input())  # Number of blades
+
+    n = int(input())  
     blades_data = []
 
     for _ in range(n):
         blades_data.append(list(map(int, input().split())))
 
-    # Solve the problem
     deadly_blades_path(n, blades_data)
 
 
 
 
-# Randomizer function
+
 def Randomizer():
     import random
     import time
 
-    # Set the seed for randomness based on the current time
+   
     random.seed(time.time())
     
-    # Randomly choose to execute either solution 1 or solution 2
+   
     if random.choice([True, False]):
         Solution1()
     else:
