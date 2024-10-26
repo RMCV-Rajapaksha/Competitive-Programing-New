@@ -58,10 +58,10 @@ def solve(N, A, B):
     
     return recurse(0, 0, 0, set())
 
-# Read input
+
 N = int(input())
 X, *A = map(int, input().split())
 Y, *B = map(int, input().split())
 
-# Print result
+
 print(solve(N, A, B))

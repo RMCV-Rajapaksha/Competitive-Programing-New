@@ -2,67 +2,112 @@
 using namespace std;
 
 const int MOD = 998244353;
-const int MAXN = 10;  // Maximum value of N
-const int MAXSZ = 20; // Maximum size for arrays (2*N)
+const int MAXN = 12;
 
-int dp[1 << (2 * MAXN)];
-bool used[1 << (2 * MAXN)];
-int N, A_mask, B_mask;
+// Custom state compressor using bit manipulation
+class StateManager {
+private:
+    vector<uint32_t> states;
+    const static int SHIFT1 = 20;  // Bits 20-31 for last1
+    const static int SHIFT2 = 8;   // Bits 8-19 for last2
+    
+public:
+    void init(int size) {
+        states.resize(1 << (2 * MAXN), -1);
+    }
+    
+    // Pack state into 32-bit integer
+    inline uint32_t pack(int last1, int last2) const {
+        return (last1 << SHIFT1) | (last2 << SHIFT2);
+    }
+    
+    // Get/Set state values
+    inline int get(int mask, int last1, int last2) const {
+        return states[mask] & ((1 << 8) - 1);
+    }
+    
+    inline void set(int mask, int last1, int last2, int value) {
+        uint32_t packed = pack(last1, last2) | (value & ((1 << 8) - 1));
+        states[mask] = packed;
+    }
+    
+    inline bool exists(int mask, int last1, int last2) const {
+        return (states[mask] != -1) && 
+               ((states[mask] >> SHIFT1) == last1) && 
+               (((states[mask] >> SHIFT2) & ((1 << 12) - 1)) == last2);
+    }
+};
 
-inline int solve_dp(int mask, int last1, int last2) {
+// Constraint manager using bit manipulation
+class ConstraintManager {
+private:
+    uint32_t a_mask;  // Bit mask for numbers that must be in row A
+    uint32_t b_mask;  // Bit mask for numbers that must be in row B
+    
+public:
+    void init(const vector<int>& A, const vector<int>& B) {
+        a_mask = b_mask = 0;
+        for (int x : A) a_mask |= (1U << (x - 1));
+        for (int x : B) b_mask |= (1U << (x - 1));
+    }
+    
+    inline bool must_be_in_A(int num) const {
+        return (a_mask & (1U << (num - 1))) != 0;
+    }
+    
+    inline bool must_be_in_B(int num) const {
+        return (b_mask & (1U << (num - 1))) != 0;
+    }
+};
+
+// Global variables to minimize stack usage
+int N;
+StateManager dp;
+ConstraintManager constraints;
+
+int solve_recursive(int mask, int last1, int last2) {
+    // Base case
     if (__builtin_popcount(mask) == 2 * N) return 1;
     
-    if (used[mask] && dp[mask] != -1) return dp[mask];
-    used[mask] = true;
+    // Check memoized state
+    if (dp.exists(mask, last1, last2)) 
+        return dp.get(mask, last1, last2);
     
     int result = 0;
-    // Try placing next pair of numbers
-    for (int num1 = last1 + 1; num1 <= 2 * N; num1++) {
-        // Skip if number is used or constrained
-        if ((mask & (1 << (num1 - 1))) || (B_mask & (1 << (num1 - 1)))) 
+    int col = __builtin_popcount(mask) / 2;
+    
+    // Try numbers for first row
+    for (int i = last1 + 1; i <= 2 * N; i++) {
+        if ((mask & (1U << (i - 1))) || constraints.must_be_in_B(i)) 
             continue;
-        
-        for (int num2 = max(last2 + 1, num1 + 1); num2 <= 2 * N; num2++) {
-            // Skip if number is used or constrained
-            if ((mask & (1 << (num2 - 1))) || (A_mask & (1 << (num2 - 1)))) 
+            
+        // Try numbers for second row
+        for (int j = max(last2 + 1, i + 1); j <= 2 * N; j++) {
+            if ((mask & (1U << (j - 1))) || constraints.must_be_in_A(j)) 
                 continue;
             
-            int new_mask = mask | (1 << (num1 - 1)) | (1 << (num2 - 1));
-            result = (result + solve_dp(new_mask, num1, num2)) % MOD;
+            int new_mask = mask | (1U << (i - 1)) | (1U << (j - 1));
+            result = (result + solve_recursive(new_mask, i, j)) % MOD;
         }
     }
     
-    return dp[mask] = result;
+    dp.set(mask, last1, last2, result);
+    return result;
 }
 
 int solve(int n, vector<int>& A_nums, vector<int>& B_nums) {
     N = n;
     
-    // Reset arrays safely
-    int total_states = 1 << (2 * N);
-    for (int i = 0; i < total_states; i++) {
-        dp[i] = -1;
-        used[i] = false;
-    }
+    // Initialize managers
+    dp.init(1 << (2 * N));
+    constraints.init(A_nums, B_nums);
     
-    // Create constraint masks
-    A_mask = B_mask = 0;
-    for (int x : A_nums) {
-        if (x > 0 && x <= 2 * N) // Bounds check
-            A_mask |= (1 << (x - 1));
-    }
-    for (int x : B_nums) {
-        if (x > 0 && x <= 2 * N) // Bounds check
-            B_mask |= (1 << (x - 1));
-    }
-    
-    return solve_dp(0, 0, 0);
+    return solve_recursive(0, 0, 0);
 }
 
 int main() {
     ios_base::sync_with_stdio(false);
     cin.tie(nullptr);
-    cout.tie(nullptr);
     
     int N, X, Y;
     cin >> N;
@@ -74,15 +119,11 @@ int main() {
     
     cin >> X;
     vector<int> A(X);
-    for (int i = 0; i < X; i++) {
-        cin >> A[i];
-    }
+    for (int i = 0; i < X; i++) cin >> A[i];
     
     cin >> Y;
     vector<int> B(Y);
-    for (int i = 0; i < Y; i++) {
-        cin >> B[i];
-    }
+    for (int i = 0; i < Y; i++) cin >> B[i];
     
     cout << solve(N, A, B) << '\n';
     return 0;
